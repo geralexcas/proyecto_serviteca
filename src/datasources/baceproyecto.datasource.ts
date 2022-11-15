@@ -1,10 +1,11 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
+import {Llaves} from '../config/llaves';
 
 const config = {
   name: 'baceproyecto',
   connector: 'mongodb',
-  url: 'mongodb+srv://geralexcasmagno:kg9OVGMV37BleWNz@clusterger.n8jw38h.mongodb.net/proyecto?retryWrites=true&w=majority',
+  url: `${Llaves.cadenaConexion}`,
   host: '',
   port: 0,
   user: '',

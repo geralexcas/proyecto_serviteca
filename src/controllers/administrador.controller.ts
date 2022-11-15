@@ -1,30 +1,32 @@
+import {service} from '@loopback/core';
 import {
   Count,
   CountSchema,
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
-  get,
-  getModelSchemaRef,
-  patch,
-  put,
   del,
-  requestBody,
-  response,
+  get,
+  getModelSchemaRef, HttpErrors, param, patch, post, put, requestBody,
+  response
 } from '@loopback/rest';
-import {Administrador} from '../models';
+import {Llaves} from '../config/llaves';
+import {Administrador, Crdenciales} from '../models';
 import {AdministradorRepository} from '../repositories';
+import {AutenticacionService} from '../services';
+const fetch = require('node-fetch');
 
 export class AdministradorController {
+  administrador: any;
   constructor(
     @repository(AdministradorRepository)
-    public administradorRepository : AdministradorRepository,
-  ) {}
+    public administradorRepository: AdministradorRepository,
+    @service(AutenticacionService)
+    public servicioAutenticacion: AutenticacionService
+  ) { }
 
   @post('/administradors')
   @response(200, {
@@ -44,7 +46,42 @@ export class AdministradorController {
     })
     administrador: Omit<Administrador, 'id'>,
   ): Promise<Administrador> {
-    return this.administradorRepository.create(administrador);
+
+    let clave = this.servicioAutenticacion.GenerarClave();
+    let cifrada = this.servicioAutenticacion.CifrarClave(clave);
+    administrador.clave = cifrada;
+    let p = await this.administradorRepository.create(administrador);
+
+    let destino = administrador.correo;
+    let asunto = 'Registro en la plataforma';
+    let contenido = `Hola ${administrador.nombres}, su usuario es: ${administrador.correo} y su contraseña es: ${clave}`;
+    fetch(`${Llaves.urlServicioCorreo}/envio-correo?correo_destino=${destino}&asunto=${asunto}&contenido=${contenido}`)
+      .then((data: any) => {
+        console.log(data);
+      });
+    return p;
+
+  }
+  @post('/administrador/identificar')
+  @response(200, {
+    description: 'Identificación de Administradores'
+  })
+  async identificar( /*metodo*/
+    @requestBody() creds: Crdenciales
+  ) {
+    let p = await this.servicioAutenticacion.Identificaradministrador(creds.usuario, creds.clave);
+
+    if (p) {
+      let token = this.servicioAutenticacion.GenerarTokenJWT(p)
+      return {
+        datos: {nombre: p.nombres, correo: p.correo, id: p.id},
+        tk: token
+      }
+    } else {
+      throw new HttpErrors[401]('Datos invalidos');
+    }
+
+
   }
 
   @get('/administradors/count')

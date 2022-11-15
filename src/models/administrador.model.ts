@@ -1,4 +1,4 @@
-import {Entity, model, property, hasMany} from '@loopback/repository';
+import {Entity, hasMany, model, property} from '@loopback/repository';
 import {DatosServicio} from './datos-servicio.model';
 
 @model()
@@ -33,6 +33,11 @@ export class Administrador extends Entity {
     required: true,
   })
   telefono: string;
+  @property({
+    type: 'string',
+    required: false,
+  })
+  clave: string;
 
   @hasMany(() => DatosServicio)
   datosServicios: DatosServicio[];
